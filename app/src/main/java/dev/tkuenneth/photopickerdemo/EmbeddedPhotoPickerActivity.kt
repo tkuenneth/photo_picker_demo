@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -101,14 +102,6 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
     ) {
         AndroidView(
             factory = { view },
-            update = { view ->
-                photoPickerSession?.surfacePackage?.let {
-                    surfacePackage = it
-                    view.setChildSurfacePackage(
-                        it
-                    )
-                }
-            },
             modifier = Modifier
                 .weight(1F)
                 .border(width = 1.dp, color = MaterialTheme.colorScheme.primary)
@@ -139,6 +132,14 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.primary
         )
+    }
+    LaunchedEffect(photoPickerSession) {
+        photoPickerSession?.surfacePackage?.let {
+            surfacePackage = it
+            view.setChildSurfacePackage(
+                it
+            )
+        }
     }
     DisposableEffect(Unit) {
         onDispose {

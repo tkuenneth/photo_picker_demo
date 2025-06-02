@@ -3,6 +3,7 @@ package dev.tkuenneth.photopickerdemo
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.SurfaceControlViewHost.SurfacePackage
 import android.view.SurfaceView
 import android.view.ViewGroup
 import android.widget.photopicker.EmbeddedPhotoPickerClient
@@ -15,7 +16,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresExtension
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -67,6 +66,7 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
     var photoPickerSession by remember { mutableStateOf<EmbeddedPhotoPickerSession?>(null) }
     var selectedUris by remember { mutableStateOf<List<Uri?>>(emptyList()) }
     var viewSize by remember { mutableStateOf<IntSize>(IntSize.Zero) }
+    var surfacePackage by remember { mutableStateOf<SurfacePackage?>(null) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -85,15 +85,15 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
                 }
             },
             update = { view ->
-                photoPickerSession?.surfacePackage?.let { surfacePackage ->
+                photoPickerSession?.surfacePackage?.let {
+                    surfacePackage = it
                     view.setChildSurfacePackage(
-                        surfacePackage
+                        it
                     )
                 }
             },
             modifier = Modifier
                 .weight(1F)
-                .background(color = Color.Red)
                 .border(width = 1.dp, color = MaterialTheme.colorScheme.primary)
                 .onGloballyPositioned { coordinates ->
                     viewSize = coordinates.size
@@ -136,6 +136,8 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
     DisposableEffect(Unit) {
         onDispose {
             photoPickerSession?.close()
+            surfacePackage?.release()
+            surfacePackage = null
         }
     }
 }

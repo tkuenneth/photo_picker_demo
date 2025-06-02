@@ -42,7 +42,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 
 class EmbeddedPhotoPickerActivity : ComponentActivity() {
 
-    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     @RequiresExtension(extension = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, version = 15)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +56,7 @@ class EmbeddedPhotoPickerActivity : ComponentActivity() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+@RequiresApi(Build.VERSION_CODES.BAKLAVA)
 @RequiresExtension(extension = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, version = 15)
 @Composable
 fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
@@ -100,9 +100,7 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         AndroidView(
-            factory = { context ->
-                view
-            },
+            factory = { view },
             update = { view ->
                 photoPickerSession?.surfacePackage?.let {
                     surfacePackage = it
@@ -148,6 +146,7 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
             photoPickerSession = null
             surfacePackage?.release()
             surfacePackage = null
+            view.clearChildSurfacePackage()
         }
     }
 }

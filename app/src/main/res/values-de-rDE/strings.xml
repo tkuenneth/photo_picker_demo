@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhotoPickerDemo</string>
+    <string name="choose_image">Bild auswählen</string>
+    <string name="show_embedded_picker">Eingebettete Fotoauswahl anzeigen</string>"
+    <string name="no_image">Kein Bild ausgewählt</string>
+</resources>

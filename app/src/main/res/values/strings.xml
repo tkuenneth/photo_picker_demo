@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name" translatable="false">PhotoPickerDemo</string>
+    <string name="choose_image">Choose image</string>
+    <string name="show_embedded_picker">Show embedded picker</string>
+    <string name="no_image">No image selected</string>
+</resources>

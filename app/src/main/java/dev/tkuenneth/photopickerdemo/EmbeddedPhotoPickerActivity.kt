@@ -80,8 +80,7 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
                     layoutParams = ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
                     )
-                    isFocusable = true
-                    isFocusableInTouchMode = true
+                    setZOrderOnTop(true)
                 }
             },
             update = { view ->
@@ -126,9 +125,9 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
                     })
             }
         }
+        val text = selectedUris.firstOrNull()?.lastPathSegment ?: ""
         Text(
-            text = if (selectedUris.isNotEmpty()) selectedUris.first()
-                .toString() else stringResource(R.string.no_image),
+            text = text.takeIf { it.isNotEmpty() } ?: stringResource(R.string.no_image),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.primary
         )

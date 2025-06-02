@@ -29,12 +29,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -60,13 +60,38 @@ class EmbeddedPhotoPickerActivity : ComponentActivity() {
 @RequiresExtension(extension = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, version = 15)
 @Composable
 fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
-    val mainExecutor = LocalContext.current.mainExecutor
-    val windowToken = LocalView.current.windowToken
-    val display = LocalView.current.display
     var photoPickerSession by remember { mutableStateOf<EmbeddedPhotoPickerSession?>(null) }
-    var selectedUris by remember { mutableStateOf<List<Uri?>>(emptyList()) }
+    var selectedUris by rememberSaveable { mutableStateOf<List<Uri>>(emptyList()) }
     var viewSize by remember { mutableStateOf<IntSize>(IntSize.Zero) }
     var surfacePackage by remember { mutableStateOf<SurfacePackage?>(null) }
+    val context = LocalContext.current
+    val view = remember {
+        SurfaceView(context).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            setZOrderOnTop(true)
+        }
+    }
+    val photoPickerClient = remember {
+        object : EmbeddedPhotoPickerClient {
+            override fun onSelectionComplete() {}
+
+            override fun onSessionError(cause: Throwable) {}
+
+            override fun onSessionOpened(session: EmbeddedPhotoPickerSession) {
+                photoPickerSession = session
+            }
+
+            override fun onUriPermissionGranted(uris: List<Uri>) {
+                selectedUris = (selectedUris + uris.toSet()).distinct()
+            }
+
+            override fun onUriPermissionRevoked(uris: List<Uri>) {
+                selectedUris = selectedUris - uris.toSet()
+            }
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -76,12 +101,7 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
     ) {
         AndroidView(
             factory = { context ->
-                SurfaceView(context).apply {
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                    setZOrderOnTop(true)
-                }
+                view
             },
             update = { view ->
                 photoPickerSession?.surfacePackage?.let {
@@ -98,34 +118,24 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
                     viewSize = coordinates.size
                 })
         key(viewSize) {
-            if (viewSize != IntSize.Zero) {
+            if (viewSize != IntSize.Zero && photoPickerSession == null) {
                 provider.openSession(
-                    windowToken,
-                    display.displayId,
+                    view.windowToken,
+                    view.display.displayId,
                     viewSize.width,
                     viewSize.height,
-                    EmbeddedPhotoPickerFeatureInfo.Builder().build(),
-                    mainExecutor,
-                    object : EmbeddedPhotoPickerClient {
-                        override fun onSelectionComplete() {}
-
-                        override fun onSessionError(cause: Throwable) {}
-
-                        override fun onSessionOpened(session: EmbeddedPhotoPickerSession) {
-                            photoPickerSession = session
-                        }
-
-                        override fun onUriPermissionGranted(uris: List<Uri?>) {
-                            selectedUris = uris
-                        }
-
-                        override fun onUriPermissionRevoked(uris: List<Uri?>) {
-                            selectedUris = selectedUris - uris.toSet()
-                        }
-                    })
+                    EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setMaxSelectionLimit(3)
+                        .setPreSelectedUris(selectedUris)
+                        .build(),
+                    context.mainExecutor,
+                    photoPickerClient
+                )
             }
         }
-        val text = selectedUris.firstOrNull()?.lastPathSegment ?: ""
+        val text = selectedUris.mapNotNull {
+            it.lastPathSegment
+        }.joinToString(separator = ", ")
         Text(
             text = text.takeIf { it.isNotEmpty() } ?: stringResource(R.string.no_image),
             style = MaterialTheme.typography.bodyLarge,
@@ -135,6 +145,7 @@ fun EmbeddedPhotoPicker(provider: EmbeddedPhotoPickerProvider) {
     DisposableEffect(Unit) {
         onDispose {
             photoPickerSession?.close()
+            photoPickerSession = null
             surfacePackage?.release()
             surfacePackage = null
         }
